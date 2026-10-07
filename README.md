@@ -43,4 +43,4 @@ The plan lives in `./.agents/PLAN.md` and is the memory across restarts; skills 
 
 - After every change to `install/`, re-run `./setup.sh` and `install/tests/goose_hints_test.sh` (it checks the hints version, that `.goosehints` matches, the skills listing and that every script runs).
 - `install/skills` holds only `bp-git`, `bp-latex`, `bp-research`, `bp-python`, `bp-rust`, `bp-bash` and `skill-authoring`; personal skills are never shipped; they live only in `~/.agents/skills`.
-- `git init`, pre-commit and CI are not set up yet.
+- Pre-commit and CI are not set up yet.
