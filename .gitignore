@@ -1,0 +1,9 @@
+.agents/
+__pycache__/
+*.pyc
+venv/
+# Private evaluation harness, runs and results: never published
+evals/
+# Private evaluation workload notes and artifacts
+research.md
+research/

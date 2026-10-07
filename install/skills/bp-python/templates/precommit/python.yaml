@@ -1,0 +1,79 @@
+# The CI gate, moved to commit time.
+# TEMPLATE: adapt SRC dir, PACKAGE name and coverage floor. Keep these comments.
+#
+# Every hook is `language: system`, not a pinned mirror. A mirror would fetch its
+# own copy of ruff or basedpyright and run it against a config pre-commit chose,
+# which is how a repository ends up with hooks that pass and CI that fails.
+# These call the tools installed on the machine and let them read
+# `pyproject.toml`, so commit and CI run the same check with the same settings.
+#
+# `pass_filenames: false` on whole-project tools is deliberate. basedpyright and
+# vulture need to see every file: handed only the staged files, everything they
+# reference looks unreferenced or untyped.
+#
+# `files` rather than `types: [python]`: the hooks are driven by pyproject.toml
+# (ruff rules, basedpyright mode, vulture paths, coverage), so a commit that
+# changes only that file must still run them.
+#
+# Install with: pre-commit install
+# Run over everything once: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=512]
+
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (src)
+        entry: ruff check src
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
+
+      - id: basedpyright
+        name: basedpyright
+        # Reads the venv through [tool.basedpyright] venvPath/venv in pyproject.toml.
+        entry: basedpyright
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
+
+      - id: vulture
+        name: vulture
+        entry: vulture
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
+
+      - id: unittest
+        name: unittest
+        # venv/bin/python, not a bare `python`: the PATH interpreter lacks this
+        # project's dependencies, so every test module fails to import.
+        # PYTHONPATH=src tests the working tree, not an installed copy.
+        entry: env PYTHONPATH=src venv/bin/python -m unittest discover -s test
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
+
+      - id: coverage
+        name: coverage (unittest, --fail-under)
+        # The same run as `unittest`, measured, and kept separate so a coverage
+        # drop reads as a coverage failure rather than a test one.
+        # The floor ratchets: raise it when the number rises, never lower it
+        # to make a commit pass.
+        entry: >-
+          bash -c 'PYTHONPATH=src venv/bin/python -m coverage run --source=PACKAGE
+          -m unittest discover -s test -q && venv/bin/python -m coverage report
+          --fail-under=90'
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
