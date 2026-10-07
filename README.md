@@ -2,7 +2,7 @@
 
 Foundations for Open Research Guidance and Expansion: one hints file and a small set of skills that make claude, goose and agy follow the same working rules.
 
-Current hints version: **h11** (`install/VERSION`).
+Current hints version: **h12** (`install/VERSION`).
 
 ## What is in the repo
 
@@ -30,8 +30,15 @@ What it does, per agent found on `PATH`:
 | agent | hints | skills | extra |
 |---|---|---|---|
 | claude | link `~/.claude/CLAUDE.md` | read from `~/.agents/skills` (claude does not load them itself; the hints say so) | none |
-| goose | a **hard link** at `~/.config/goose/.goosehints` (goose ignores a symlink; a hard link is a regular file with the same inode, so edits in place reach it; an editor that replaces the file (`sed -i`, save-by-rename) or a different filesystem breaks it: setup falls back to a copy, `--status` reports `copy` or `STALE`, re-run setup to relink) | `load_skill` | `GOOSE_MOIM_MESSAGE_FILE` block in `~/.bashrc`, Top Of Mind extension enabled |
+| goose | a **hard link** at `~/.config/goose/.goosehints` (goose ignores a symlink; a hard link is a regular file with the same inode, so edits in place reach it; an editor that replaces the file (`sed -i`, save-by-rename) or a different filesystem breaks it: setup falls back to a copy, `--status` reports `copy` or `STALE`, re-run setup to relink) | `load_skill` | `GOOSE_MOIM_MESSAGE_FILE` block in `~/.zshrc` (zsh) or `~/.bashrc`, Top Of Mind extension enabled |
 | agy | link `~/.gemini/GEMINI.md` | `~/.gemini/config/skills.json` with an absolute path (agy does not expand `~`) | none |
+
+## macOS and the goose desktop app
+
+- `setup.sh` runs on the stock bash 3.2 and BSD tools (no `cp -u`, `sed -i` or stdin `paste`).
+- goose counts as installed when `goose` is on `PATH` or the desktop app is in `/Applications` (its CLI is `Goose.app/Contents/Resources/bin/goose`, also used by the test).
+- The desktop app starts a chat in the home folder unless a project folder is picked, so the hints send that plan to `~/.agents/plans/<date>-<topic>/PLAN.md` instead of `~/.agents/PLAN.md`.
+- With an ACP provider (`claude-acp`), goose forwards only the latest user message and `type: mcp` extensions: `.goosehints`, the Top Of Mind reminder and platform extensions (`load_skill`, developer, todo) never reach the agent. Claude still gets the hints through `~/.claude/CLAUDE.md`, because the adapter loads the user settings, and reads the skills from `~/.agents/skills` as the hints say.
 
 Existing files are saved as `<name>.pre-forge-<timestamp>` and restored by `--uninstall`. Skills and tests under `~/.agents` are kept on uninstall. `$HOME` is honoured, so a test run in a throwaway `HOME` touches nothing else.
 

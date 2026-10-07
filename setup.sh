@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # FORGE setup: copy ./install into ~/.agents, then set up only the agents found on PATH (claude, goose, agy):
-# link the hints, goose: tom variable in ~/.bashrc + tom extension enabled, agy: skills.json.
+# link the hints, goose: tom variable in the shell rc + tom extension enabled, agy: skills.json.
+# Runs on Linux and macOS (bash 3.2, BSD tools).
 # Usage: setup.sh [--install|--update] [--uninstall] [--status] [-n|--dry-run] [-f|--force] [--langs python,rust,bash|all|none]
 #   default: install; re-running it is an update: a file is copied when missing or older than the source, a newer
 #   installed file is kept and reported; --force replaces every file. --langs picks the language skills (bp-python, bp-rust, bp-bash) to install (bp-git, bp-latex and bp-research are always installed); without it,
@@ -16,7 +17,9 @@ NAMES=(claude goose agy)
 LINKS=("$HOME/.claude/CLAUDE.md" "$HOME/.config/goose/.goosehints" "$HOME/.gemini/GEMINI.md")
 SKJSON=$HOME/.gemini/config/skills.json
 GCONF=${XDG_CONFIG_HOME:-$HOME/.config}/goose/config.yaml
-RC=$HOME/.bashrc
+case ${SHELL##*/} in zsh) RC=$HOME/.zshrc ;; *) RC=$HOME/.bashrc ;; esac
+# macOS: the goose desktop app ships its own CLI inside the bundle; it counts as goose installed.
+GOOSE_APP=/Applications/Goose.app/Contents/Resources/bin/goose
 BEGIN='# >>> forge >>>'; END='# <<< forge <<<'
 mode=install; dry=0; force=0; LANGS=""
 while [ $# -gt 0 ]; do
@@ -31,7 +34,7 @@ while [ $# -gt 0 ]; do
 done
 
 run() { echo "+ $*"; [ "$dry" -eq 1 ] || "$@"; }
-have() { command -v "$1" >/dev/null 2>&1; }
+have() { command -v "$1" >/dev/null 2>&1 || { [ "$1" = goose ] && [ -x "$GOOSE_APP" ]; }; }
 ts() { date +%F-%H%M%S; }
 # goose ignores a symlinked .goosehints (eval T0, 2026-10-03), so it gets a hard link (a regular file, same inode: edits to the hints reach it);
 # if the hard link is impossible (other filesystem) it gets an identical copy. claude and agy get symlinks.
@@ -39,7 +42,18 @@ iscopy() { [ "$1" = "$HOME/.config/goose/.goosehints" ]; }
 mine() { if iscopy "$1"; then [ -f "$1" ] && [ ! -L "$1" ] && [ "$1" -ef "$HINTS" ]; else [ -L "$1" ] && [ "$(readlink "$1")" = "$HINTS" ]; fi; }
 samecopy() { iscopy "$1" && [ -f "$1" ] && [ ! -L "$1" ] && cmp -s "$1" "$HINTS"; }
 ours() { mine "$1" || samecopy "$1"; }
-# put SRC DESTDIR: copy a file or folder into DESTDIR; update mode (cp -u: missing or older only), --force replaces all.
+# files SRC: every file under a file or folder, NUL separated, without __pycache__.
+files() { find "$1" -type f ! -path '*__pycache__*' -print0; }
+# cpu SRC DESTDIR: copy each file that is missing or older than the source (GNU cp -u; macOS cp has no -u).
+# cp onto an existing file rewrites it in place, so the .goosehints hard link survives an update.
+cpu() {
+  local src=$1 dst=$2 f r
+  while IFS= read -r -d '' f; do
+    r=${f#"$(dirname "$src")"/}
+    if [ ! -e "$dst/$r" ] || [ "$f" -nt "$dst/$r" ]; then mkdir -p "$(dirname "$dst/$r")" && cp -p "$f" "$dst/$r"; fi
+  done < <(files "$src")
+}
+# put SRC DESTDIR: copy a file or folder into DESTDIR; update mode (missing or older only), --force replaces all.
 # Installed files that differ but are newer than the source are kept and reported.
 put() {
   local src=$1 dst=$2 f r
@@ -47,8 +61,8 @@ put() {
     while IFS= read -r -d '' f; do
       r=${f#"$(dirname "$src")"/}
       [ -f "$dst/$r" ] && [ "$dst/$r" -nt "$f" ] && ! cmp -s "$f" "$dst/$r" && echo "keep $dst/$r (newer than source; --force replaces)"
-    done < <(find "$src" -type f ! -path '*__pycache__*' -print0)
-    run cp -au "$src" "$dst/"
+    done < <(files "$src")
+    run cpu "$src" "$dst"
   else run cp -a "$src" "$dst/"; fi
 }
 
@@ -74,7 +88,7 @@ NONLANG=" git latex research "
 is_lang() { case "$NONLANG" in *" $1 "*) false ;; *) true ;; esac; }
 want_lang() { [ "$LANGS" = all ] || case ",$LANGS," in *",$1,"*) true ;; *) false ;; esac; }
 choose_langs() {
-  local avail l; avail=$(ls -1 "$SRC"/skills | sed -n 's/^bp-//p' | while read -r l; do is_lang "$l" && echo "$l"; done | paste -sd' ')
+  local avail l; avail=$(ls -1 "$SRC"/skills | sed -n 's/^bp-//p' | while read -r l; do is_lang "$l" && echo "$l"; done | paste -sd' ' -)
   if [ -z "$LANGS" ] && [ -t 0 ] && [ "$dry" -eq 0 ]; then
     read -r -p "Install best-practice skills for [$avail] (comma list, all, none) [all]: " LANGS || true
   fi
@@ -127,7 +141,8 @@ uninstall_all() {
   if grep -qs "^$BEGIN" "$RC"; then
     run cp -a "$RC" "$RC.pre-forge-$(ts)"
     echo "+ remove forge block from $RC"
-    [ "$dry" -eq 1 ] || sed -i "/^$BEGIN/,/^$END/d" "$RC"
+    # BSD sed -i needs a suffix argument; filter through a temp file and write back in place instead
+    [ "$dry" -eq 1 ] || { sed "/^$BEGIN/,/^$END/d" "$RC" >"$RC.new" && cat "$RC.new" >"$RC" && rm "$RC.new"; }
   fi
   run rm -rf "$A/hints"
   run rm -f "$A/VERSION"
