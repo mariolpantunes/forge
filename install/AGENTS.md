@@ -4,6 +4,7 @@
 
 # Workflow
 - Start every task by creating or updating `./.agents/PLAN.md` in the current folder (repo or not).
+- If the current folder is the home folder (the goose desktop default when no project folder was picked), never write `~/.agents/PLAN.md` (`~/.agents` is the shared support folder): use `~/.agents/plans/<YYYY-MM-DD>-<topic>/PLAN.md`, put the task's other agentic files beside it, and say once that a project folder can be picked in the goose chat.
 - PLAN.md sections: Done, Current, Next, Aborted, Key knowledge.
 - Update PLAN.md when the task ends.
 - Research, plan, implement. Think, then act once a good solution exists.
