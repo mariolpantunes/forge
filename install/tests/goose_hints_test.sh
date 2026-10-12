@@ -14,7 +14,7 @@ bad() { echo "  FAIL $*"; fail=$((fail+1)); }
 echo "== static checks"
 [ -f ~/.agents/VERSION ] && ok "forge hints $(cat ~/.agents/VERSION)" || bad "~/.agents/VERSION missing (run setup.sh)"
 cmp -s ~/.agents/AGENTS.md ~/.config/goose/.goosehints && ok ".goosehints matches ~/.agents/AGENTS.md" || bad ".goosehints differs from ~/.agents/AGENTS.md (re-run setup.sh)"
-for s in bp-git bp-latex bp-research skill-authoring; do
+for s in bp-git bp-latex bp-research skill-authoring plan-keeper; do
   printf '%s\n' "$LISTED" | grep -q "^$s " && ok "skill listed: $s" || bad "skill missing: $s"
 done
 for s in bp-python bp-rust bp-bash; do
@@ -24,6 +24,7 @@ for f in "$SK"/*/scripts/*.py; do
   uv run "$f" --help >/dev/null 2>&1 && ok "runs: ${f#$SK/}" || bad "does not run: ${f#$SK/}"
 done
 uv run "$SK/skill-authoring/scripts/validate_skills.py" >/dev/null && ok "skills validate" || bad "validate_skills.py reports errors"
+python3 "$(dirname "$0")/plan_keeper_test.py" >/dev/null 2>&1 && ok "plan-keeper unit tests" || bad "plan_keeper_test.py fails"
 # every skill the hints or the reminder name must be installed (issue #3: moim.md once named a skill that is not shipped)
 missing=""
 for n in $(grep -ohE 'load_skill [a-z][a-z0-9-]+|\bbp-[a-z]+\b' ~/.agents/AGENTS.md ~/.agents/moim.md 2>/dev/null | sed 's/^load_skill //' | grep -vx tool | sort -u); do

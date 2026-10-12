@@ -4,11 +4,16 @@
 
 # Workflow
 - Start every task by creating or updating `./.agents/PLAN.md` in the current folder (repo or not).
-- If the current folder is the home folder (the goose desktop default when no project folder was picked), keep the plan in `~/.agents/plans/<YYYY-MM-DD>-<topic>/PLAN.md`.
+- If the current folder is the home folder (the goose desktop default when no project folder was picked), the plan is `~/.agents/plans/PLAN.md`: a PLAN.md whose Current section links to one plan folder per work concept.
+- Continue the plan folder of the concept that covers the task; create a new one only when none does.
+- A chat that writes no files needs no plan folder.
 - Never write `~/.agents/PLAN.md`: `~/.agents` is the shared support folder.
-- In that case put the task's other agentic files beside the plan.
-- In that case say once that a project folder can be picked in the goose chat.
+- Put the task's other agentic files beside the plan.
+- When a task changes files in another project folder, add an entry to that folder's `.agents/PLAN.md`; a home plan only links to it.
+- Subagents never write PLAN.md; the parent records their results.
+- Keep PLAN.md under about 8k tokens (26 KB); above that, compact it to about 4k.
 - PLAN.md sections: Done, Current, Next, Aborted, Key knowledge.
+- Write PLAN.md and every other agentic file in English, whatever language the chat uses.
 - Update PLAN.md when the task ends.
 - Research, plan, implement. Think, then act once a good solution exists.
 - Assume a limited context window (128k tokens) that is summarised or restarted at any time.

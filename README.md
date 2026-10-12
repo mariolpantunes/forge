@@ -2,7 +2,7 @@
 
 Foundations for Open Research Guidance and Expansion: one hints file and a small set of skills that make claude, goose and agy follow the same working rules.
 
-Current hints version: **h14** (`install/VERSION`).
+Current hints version: **h15** (`install/VERSION`).
 
 ## What is in the repo
 
@@ -10,7 +10,7 @@ Current hints version: **h14** (`install/VERSION`).
 |---|---|
 | `install/AGENTS.md` | the hints file (role, workflow, scope, reading and writing, languages, memory); the single source for all three agents |
 | `install/moim.md` | the per-turn reminder for goose (plan file, `load_skill`, act in the same turn, write long files in parts) |
-| `install/skills/` | 7 skills: `bp-git`, `bp-latex`, `bp-research`, `skill-authoring` (always installed) and `bp-python`, `bp-rust`, `bp-bash` (optional, see `--langs`) |
+| `install/skills/` | 8 skills: `bp-git`, `bp-latex`, `bp-research`, `skill-authoring`, `plan-keeper` (always installed) and `bp-python`, `bp-rust`, `bp-bash` (optional, see `--langs`) |
 | `install/tests/` | headless smoke tests for the hints and skills |
 | `setup.sh` | installs `install/` into `~/.agents` and wires the agents that are on `PATH` |
 
@@ -37,7 +37,7 @@ What it does, per agent found on `PATH`:
 
 - `setup.sh` runs on the stock bash 3.2 and BSD tools (no `cp -u`, `sed -i` or stdin `paste`).
 - goose counts as installed when `goose` is on `PATH` or the desktop app is in `/Applications` (its CLI is `Goose.app/Contents/Resources/bin/goose`, also used by the test).
-- The desktop app starts a chat in the home folder unless a project folder is picked, so the hints send that plan to `~/.agents/plans/<date>-<topic>/PLAN.md` instead of `~/.agents/PLAN.md`.
+- The desktop app starts a chat in the home folder unless a project folder is picked, so the hints send that plan to `~/.agents/plans/PLAN.md` (a router that links one plan folder per work concept, kept by the `plan-keeper` skill) instead of `~/.agents/PLAN.md`.
 - With an ACP provider (`claude-acp`), goose forwards only the latest user message and `type: mcp` extensions: `.goosehints`, the Top Of Mind reminder and platform extensions (`load_skill`, developer, todo) never reach the agent. Claude still gets the hints through `~/.claude/CLAUDE.md`, because the adapter loads the user settings, and reads the skills from `~/.agents/skills` as the hints say.
 
 Claude Code writes the account-synced skills to `~/.claude/skills/synced/`, so with the folder link they land in `~/.agents/skills/synced/`. Goose reads `~/.claude/skills` by itself, so it lists them with or without the link; agy scans one level and does not. `validate_skills.py` and `--status` treat `synced/` as a container, not an error. Claude Code has no setting for another location (only `syncClaudeAiSkills: false`); requested upstream in anthropics/claude-code#16345 (native `~/.agents/skills`) and #101422 (location of synced skills).
@@ -46,10 +46,10 @@ Existing files and folders are saved as `<name>.pre-forge-<timestamp>` and resto
 
 ## The hints in one paragraph
 
-The plan lives in `./.agents/PLAN.md` and is the memory across restarts; skills are loaded before the first edit (goose: `load_skill`, others: read `SKILL.md`); a missing library is fixed inside the project (venv, PEP 723, cargo), never by skipping a deliverable; long jobs log to a file and are polled; a turn never ends by announcing the next step; files longer than 150 lines are written in parts; the matching `bp-<lang>` skill is loaded before writing code; agentic files go to `./.agents/` (always gitignored) and scratch to `/tmp/<project>`.
+The plan lives in `./.agents/PLAN.md` (written in English, whatever language the chat uses) and is the memory across restarts; skills are loaded before the first edit (goose: `load_skill`, others: read `SKILL.md`); a missing library is fixed inside the project (venv, PEP 723, cargo), never by skipping a deliverable; long jobs log to a file and are polled; a turn never ends by announcing the next step; files longer than 150 lines are written in parts; the matching `bp-<lang>` skill is loaded before writing code; agentic files go to `./.agents/` (always gitignored) and scratch to `/tmp/<project>`.
 
 ## Open items
 
 - After every change to `install/`, re-run `./setup.sh` and `install/tests/goose_hints_test.sh` (it checks the hints version, that `.goosehints` matches, the skills listing and that every script runs).
-- `install/skills` holds only `bp-git`, `bp-latex`, `bp-research`, `bp-python`, `bp-rust`, `bp-bash` and `skill-authoring`; personal skills are never shipped; they live only in `~/.agents/skills`.
+- `install/skills` holds only `bp-git`, `bp-latex`, `bp-research`, `bp-python`, `bp-rust`, `bp-bash`, `skill-authoring` and `plan-keeper`; personal skills are never shipped; they live only in `~/.agents/skills`.
 - Pre-commit and CI are not set up yet.
