@@ -19,6 +19,7 @@ Command: `uv run ~/.agents/skills/plan-keeper/scripts/plan.py` (below: `plan.py`
 ## Write
 
 1. Add an entry: `plan.py add [--plan P] <Done|Current|Next|Aborted|Key> "<text>"`.
+   A plan written by hand uses the same five headings (`## Done` ... `## Key knowledge`).
 2. The home router holds one line per concept; `find` matches the task against that line, so reword it when the work shifts (`add --desc "<new line>"`).
 3. One entry: what was done, output paths, the rerun command, the decision, the next step.
 4. Text over 3 lines goes to `notes/` by itself; the entry keeps a link.
@@ -31,7 +32,8 @@ Command: `uv run ~/.agents/skills/plan-keeper/scripts/plan.py` (below: `plan.py`
 
 1. `plan.py archive --plan P`: a verbatim copy in `plan-archive/`; note the printed hash.
 2. Read the plan and write a draft to `/tmp/<project>/plan-draft.md`.
-3. Draft rules: sections Done, Current, Next, Aborted, Key knowledge; at most 3 lines per entry; target 4k tokens.
+3. Draft rules: at most 3 lines per entry; target 4k tokens; exactly these headings, in this order:
+   `## Done`, `## Current`, `## Next`, `## Aborted`, `## Key knowledge`.
 4. Keep every output path and rerun command that is still live; keep open Next items and the Current state verbatim.
 5. Put each tested idea as one line in `### Tried` under Key knowledge: idea, result, evidence path (at most 40; older ones go to `notes/tried.md`).
 6. Move run lists, result tables and long findings to `notes/<topic>.md` and link them.
