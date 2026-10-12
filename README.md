@@ -40,6 +40,8 @@ What it does, per agent found on `PATH`:
 - The desktop app starts a chat in the home folder unless a project folder is picked, so the hints send that plan to `~/.agents/plans/<date>-<topic>/PLAN.md` instead of `~/.agents/PLAN.md`.
 - With an ACP provider (`claude-acp`), goose forwards only the latest user message and `type: mcp` extensions: `.goosehints`, the Top Of Mind reminder and platform extensions (`load_skill`, developer, todo) never reach the agent. Claude still gets the hints through `~/.claude/CLAUDE.md`, because the adapter loads the user settings, and reads the skills from `~/.agents/skills` as the hints say.
 
+The Claude app's account-synced skills (`~/.claude/skills/synced/`) land in `~/.agents/skills/synced/` on purpose: goose finds them there (checked: 13 skills listed), so every agent can use them. `validate_skills.py` and `--status` treat `synced/` as a container, not an error. agy scans one level only, so it probably does not list them (not tested).
+
 Existing files and folders are saved as `<name>.pre-forge-<timestamp>` and restored by `--uninstall` (which also removes the `~/.claude/skills` link). Skills and tests under `~/.agents` are kept on uninstall. `$HOME` is honoured, so a test run in a throwaway `HOME` touches nothing else.
 
 ## The hints in one paragraph
