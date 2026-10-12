@@ -2,7 +2,7 @@
 
 Foundations for Open Research Guidance and Expansion: one hints file and a small set of skills that make claude, goose and agy follow the same working rules.
 
-Current hints version: **h13** (`install/VERSION`).
+Current hints version: **h14** (`install/VERSION`).
 
 ## What is in the repo
 
@@ -30,7 +30,7 @@ What it does, per agent found on `PATH`:
 | agent | hints | skills | extra |
 |---|---|---|---|
 | claude | link `~/.claude/CLAUDE.md` | `~/.claude/skills` becomes a symlink to `~/.agents/skills` so claude lists the skills itself; skills already in `~/.claude/skills` are merged into `~/.agents/skills` first (an existing name there wins) and the old folder is saved as `skills.pre-forge-<timestamp>` | none |
-| goose | a **hard link** at `~/.config/goose/.goosehints` (goose ignores a symlink; a hard link is a regular file with the same inode, so edits in place reach it; an editor that replaces the file (`sed -i`, save-by-rename) or a different filesystem breaks it: setup falls back to a copy, `--status` reports `copy` or `STALE`, re-run setup to relink) | `load_skill` | `GOOSE_MOIM_MESSAGE_FILE` block in `~/.zshrc` (zsh) or `~/.bashrc`, Top Of Mind extension enabled |
+| goose | a **hard link** at `~/.config/goose/.goosehints` (goose ignores a symlink; a hard link is a regular file with the same inode, so edits in place reach it; an editor that replaces the file (`sed -i`, save-by-rename) or a different filesystem breaks it: setup falls back to a copy, `--status` reports `copy` or `STALE`, re-run setup to relink) | `load_skill` | `GOOSE_MOIM_MESSAGE_FILE: ~/.agents/moim.md` (absolute path) in goose's `config.yaml`, so the desktop app gets it too, Top Of Mind extension enabled; a forge block that an older setup appended to `~/.zshrc` or `~/.bashrc` is removed (backup saved); without a `config.yaml` the rc export is the fallback |
 | agy | link `~/.gemini/GEMINI.md` | `~/.gemini/config/skills.json` with an absolute path (agy does not expand `~`) | none |
 
 ## macOS and the goose desktop app

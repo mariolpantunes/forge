@@ -136,6 +136,10 @@ def main(log):
         return 0
     root = Path(sys.argv[1] if len(sys.argv) > 1 else "~/.agents/skills").expanduser()
     skills = sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
+    # a folder without SKILL.md that holds skills in subfolders (claude's account-synced skills) is a container, not a broken skill
+    for c in [p for p in skills if not (p / "SKILL.md").exists() and any(p.rglob("SKILL.md"))]:
+        print(f"skip {c.name} (no SKILL.md of its own, holds skills in subfolders)")
+        skills.remove(c)
     names = {p.name for p in skills}
     bad = 0
     for s in skills:

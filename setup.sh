@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # FORGE setup: copy ./install into ~/.agents, then set up only the agents found on PATH (claude, goose, agy):
-# link the hints; claude: ~/.claude/skills -> ~/.agents/skills; goose: tom variable in the shell rc + tom extension enabled; agy: skills.json.
+# link the hints; claude: ~/.claude/skills -> ~/.agents/skills; goose: GOOSE_MOIM_MESSAGE_FILE in config.yaml + tom extension enabled; agy: skills.json.
 # Runs on Linux and macOS (bash 3.2, BSD tools).
 # Usage: setup.sh [--install|--update] [--uninstall] [--status] [-n|--dry-run] [-f|--force] [--langs python,rust,bash|all|none]
 #   default: install; re-running it is an update: a file is copied when missing or older than the source, a newer
@@ -87,10 +87,32 @@ claude_skills() {
   run ln -s "$A/skills" "$CSK"
 }
 
+# remove the forge block that older versions appended to the shell rc (backup first)
+drop_rc_block() {
+  grep -qs "^$BEGIN" "$RC" || return 0
+  run cp -a "$RC" "$RC.pre-forge-$(ts)"
+  echo "+ remove forge block from $RC"
+  # BSD sed -i needs a suffix argument; filter through a temp file and write back in place instead
+  [ "$dry" -eq 1 ] || { sed "/^$BEGIN/,/^$END/d" "$RC" >"$RC.new" && cat "$RC.new" >"$RC" && rm "$RC.new"; }
+}
+
+# the Top Of Mind reminder file is set in goose's config.yaml (goose 1.54 reads GOOSE_MOIM_MESSAGE_FILE there, tested 2026-10-12):
+# the desktop app does not source the shell rc. Without a config.yaml the old rc export is the fallback.
 goose_tom() {
-  if ! grep -qs 'GOOSE_MOIM_MESSAGE_FILE=' "$RC"; then
+  local cur
+  if [ -f "$GCONF" ]; then
+    cur=$(sed -n 's/^GOOSE_MOIM_MESSAGE_FILE:[[:space:]]*//p' "$GCONF" | tr -d "\"' " | head -1)
+    cur=${cur/#\~/$HOME}
+    if [ "$cur" = "$A/moim.md" ]; then echo "ok   GOOSE_MOIM_MESSAGE_FILE in $GCONF"
+    elif [ -z "$cur" ]; then
+      run cp -a "$GCONF" "$GCONF.pre-forge-$(ts)"
+      echo "+ set GOOSE_MOIM_MESSAGE_FILE in $GCONF"
+      [ "$dry" -eq 1 ] || { { cat "$GCONF"; [ -z "$(tail -c1 "$GCONF")" ] || echo; echo "GOOSE_MOIM_MESSAGE_FILE: $A/moim.md"; } >"$GCONF.new" && mv "$GCONF.new" "$GCONF"; }
+    else echo "warn: $GCONF sets GOOSE_MOIM_MESSAGE_FILE to $cur; left alone"; fi
+    drop_rc_block
+  elif ! grep -qs 'GOOSE_MOIM_MESSAGE_FILE=' "$RC"; then
     [ -f "$RC" ] && run cp -a "$RC" "$RC.pre-forge-$(ts)"
-    echo "+ append forge block to $RC"
+    echo "+ append forge block to $RC (fallback: no $GCONF)"
     [ "$dry" -eq 1 ] || printf '\n%s\nexport GOOSE_MOIM_MESSAGE_FILE="$HOME/.agents/moim.md"\n%s\n' "$BEGIN" "$END" >>"$RC"
   elif grep -q 'GOOSE_MOIM_MESSAGE_FILE=.*\.agents/moim\.md' "$RC"; then echo "ok   tom variable in $RC"
   else echo "warn: $RC sets GOOSE_MOIM_MESSAGE_FILE to something else; left alone"; fi
@@ -165,11 +187,11 @@ uninstall_all() {
     b=""; for f in "$CSK".pre-forge-*; do if [ -e "$f" ] || [ -L "$f" ]; then b=$f; fi; done
     [ -z "$b" ] || run mv "$b" "$CSK"
   else echo "skip $CSK (not a forge link)"; fi
-  if grep -qs "^$BEGIN" "$RC"; then
-    run cp -a "$RC" "$RC.pre-forge-$(ts)"
-    echo "+ remove forge block from $RC"
-    # BSD sed -i needs a suffix argument; filter through a temp file and write back in place instead
-    [ "$dry" -eq 1 ] || { sed "/^$BEGIN/,/^$END/d" "$RC" >"$RC.new" && cat "$RC.new" >"$RC" && rm "$RC.new"; }
+  drop_rc_block
+  if grep -qs "^GOOSE_MOIM_MESSAGE_FILE:.*moim\.md" "$GCONF"; then
+    run cp -a "$GCONF" "$GCONF.pre-forge-$(ts)"
+    echo "+ remove GOOSE_MOIM_MESSAGE_FILE from $GCONF"
+    [ "$dry" -eq 1 ] || { grep -v '^GOOSE_MOIM_MESSAGE_FILE:.*moim\.md' "$GCONF" >"$GCONF.new"; mv "$GCONF.new" "$GCONF"; }
   fi
   run rm -rf "$A/hints"
   run rm -f "$A/VERSION"
@@ -185,7 +207,7 @@ status_all() {
   done
   if [ -L "$CSK" ] && [ "$(readlink "$CSK")" = "$A/skills" ]; then echo "linked  $CSK"; elif [ -e "$CSK" ] || [ -L "$CSK" ]; then echo "OTHER   $CSK (not a forge link; re-run setup.sh to merge and link)"; else echo "missing $CSK"; fi
   [ -f "$HINTS" ] && echo "present $HINTS (forge hints $(cat "$A/VERSION" 2>/dev/null || echo '?'), source $(cat "$SRC/VERSION"))" || echo "missing $HINTS"
-  diff -rq "$SRC/skills" "$A/skills" 2>/dev/null | grep -v __pycache__ | grep -v 'Only in .*: bp-' | head -10 || true
+  diff -rq "$SRC/skills" "$A/skills" 2>/dev/null | grep -v __pycache__ | grep -v 'Only in .*: bp-' | grep -v 'Only in .*/skills: synced$' | head -10 || true
 }
 
 case $mode in install) install_all ;; uninstall) uninstall_all ;; status) status_all ;; esac
