@@ -2,7 +2,7 @@
 
 Foundations for Open Research Guidance and Expansion: one hints file and a small set of skills that make claude, goose and agy follow the same working rules.
 
-Current hints version: **h15** (`install/VERSION`).
+Current hints version: **h16** (`install/VERSION`).
 
 ## What is in the repo
 

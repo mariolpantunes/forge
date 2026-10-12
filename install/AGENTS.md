@@ -3,7 +3,14 @@
 - Work types: teaching material (slides, guides, solutions), research papers (code, paper), coding tasks (code and repo management).
 
 # Workflow
+- Skill routing comes first, before any edit and before the plan: run `rg -m1 '^description:' ~/.agents/skills/*/SKILL.md`.
+- Load every skill whose description matches any part of the task, a pipeline skill first.
+- A task that names a paper, review, dataset or deliverable list almost always matches a skill.
+- Load a skill with your skill tool: goose `load_skill` (name = skill name, `name/references/file.md` for a reference); other agents read its SKILL.md.
+- Write the chosen skills into PLAN.md Key knowledge.
 - Start every task by creating or updating `./.agents/PLAN.md` in the current folder (repo or not).
+- PLAN.md sections: Done, Current, Next, Aborted, Key knowledge.
+- Write PLAN.md and every other agentic file in English, whatever language the chat uses.
 - If the current folder is the home folder (the goose desktop default when no project folder was picked), the plan is `~/.agents/plans/PLAN.md`: a PLAN.md whose Current section links to one plan folder per work concept.
 - Continue the plan folder of the concept that covers the task; create a new one only when none does.
 - A chat that writes no files needs no plan folder.
@@ -12,8 +19,6 @@
 - When a task changes files in another project folder, add an entry to that folder's `.agents/PLAN.md`; a home plan only links to it.
 - Subagents never write PLAN.md; the parent records their results.
 - Keep PLAN.md under about 8k tokens (26 KB); above that, compact it to about 4k.
-- PLAN.md sections: Done, Current, Next, Aborted, Key knowledge.
-- Write PLAN.md and every other agentic file in English, whatever language the chat uses.
 - Update PLAN.md when the task ends.
 - Research, plan, implement. Think, then act once a good solution exists.
 - Assume a limited context window (128k tokens) that is summarised or restarted at any time.
@@ -25,11 +30,6 @@
 - Never end the session while a job is still running: it is killed on exit.
 - Act in the same turn: never end a turn by announcing the next step.
 - End a turn only with the final report or a blocking question.
-- Skill routing, before the first edit: run `rg -m1 '^description:' ~/.agents/skills/*/SKILL.md`.
-- Load every skill whose description matches any part of the task, a pipeline skill first.
-- A task that names a paper, review, dataset or deliverable list almost always matches a skill.
-- Load a skill with your skill tool: goose `load_skill` (name = skill name, `name/references/file.md` for a reference); other agents read its SKILL.md.
-- Write the chosen skills into PLAN.md Key knowledge.
 - A missing library, a failed install or a slow run is a step to fix, never a reason to skip a deliverable.
 - Fix a missing library inside the project: a project requirement in its own venv or manifest, a skill requirement with `uv`.
 - `bp-python` and `bp-rust` say how to fix a missing library.
