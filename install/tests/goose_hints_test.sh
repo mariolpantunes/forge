@@ -26,7 +26,7 @@ done
 uv run "$SK/skill-authoring/scripts/validate_skills.py" >/dev/null && ok "skills validate" || bad "validate_skills.py reports errors"
 # every skill the hints or the reminder name must be installed (issue #3: moim.md once named a skill that is not shipped)
 missing=""
-for n in $(grep -ohE 'load_skill [a-z][a-z0-9-]+|\bbp-[a-z]+\b' ~/.agents/AGENTS.md ~/.agents/moim.md 2>/dev/null | sed 's/^load_skill //' | sort -u); do
+for n in $(grep -ohE 'load_skill [a-z][a-z0-9-]+|\bbp-[a-z]+\b' ~/.agents/AGENTS.md ~/.agents/moim.md 2>/dev/null | sed 's/^load_skill //' | grep -vx tool | sort -u); do
   [ -d "$SK/$n" ] || missing="$missing $n"
 done
 [ -z "$missing" ] && ok "hints and reminder name only installed skills" || bad "hints or reminder name skills that are not installed:$missing"
