@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # FORGE setup: copy ./install into ~/.agents, then set up only the agents found on PATH (claude, goose, agy):
-# link the hints, goose: tom variable in the shell rc + tom extension enabled, agy: skills.json.
+# link the hints; claude: ~/.claude/skills -> ~/.agents/skills; goose: tom variable in the shell rc + tom extension enabled; agy: skills.json.
 # Runs on Linux and macOS (bash 3.2, BSD tools).
 # Usage: setup.sh [--install|--update] [--uninstall] [--status] [-n|--dry-run] [-f|--force] [--langs python,rust,bash|all|none]
 #   default: install; re-running it is an update: a file is copied when missing or older than the source, a newer
@@ -16,6 +16,7 @@ OLDHINTS=$A/hints/AGENTS.md
 NAMES=(claude goose agy)
 LINKS=("$HOME/.claude/CLAUDE.md" "$HOME/.config/goose/.goosehints" "$HOME/.gemini/GEMINI.md")
 SKJSON=$HOME/.gemini/config/skills.json
+CSK=$HOME/.claude/skills
 GCONF=${XDG_CONFIG_HOME:-$HOME/.config}/goose/config.yaml
 case ${SHELL##*/} in zsh) RC=$HOME/.zshrc ;; *) RC=$HOME/.bashrc ;; esac
 # macOS: the goose desktop app ships its own CLI inside the bundle; it counts as goose installed.
@@ -64,6 +65,26 @@ put() {
     done < <(files "$src")
     run cpu "$src" "$dst"
   else run cp -a "$src" "$dst/"; fi
+}
+
+# claude lists skills only from ~/.claude/skills: make it a link to $A/skills. Skills already there are merged into $A/skills
+# first (an existing name in $A/skills wins), then the old folder or link is saved as skills.pre-forge-<ts>; --uninstall restores it.
+claude_skills() {
+  local d n
+  if [ -L "$CSK" ] && [ "$(readlink "$CSK")" = "$A/skills" ]; then echo "ok   $CSK"; return 0; fi
+  run mkdir -p "$(dirname "$CSK")"
+  if [ -e "$CSK" ] || [ -L "$CSK" ]; then
+    if [ -d "$CSK" ]; then
+      for d in "$CSK"/*/; do
+        [ -d "$d" ] || continue
+        n=$(basename "$d")
+        if [ -e "$A/skills/$n" ]; then echo "keep $A/skills/$n (also in $CSK; the saved folder keeps the other copy)"
+        else run cp -aL "${d%/}" "$A/skills/"; fi
+      done
+    fi
+    run mv "$CSK" "$CSK.pre-forge-$(ts)"
+  fi
+  run ln -s "$A/skills" "$CSK"
 }
 
 goose_tom() {
@@ -123,6 +144,7 @@ install_all() {
       else run ln -s "$HINTS" "$t"; fi
     fi
     case $c in
+      claude) claude_skills ;;
       goose) put "$SRC/moim.md" "$A"; goose_tom ;;
       agy) run mkdir -p "$(dirname "$SKJSON")"; echo "+ write $SKJSON (absolute path: agy does not expand ~)"
          [ "$dry" -eq 1 ] || printf '{\n  "entries": [ { "path": "%s" } ]\n}\n' "$A/skills" >"$SKJSON" ;;
@@ -138,6 +160,11 @@ uninstall_all() {
     b=$(ls -1 "$t".pre-forge-* 2>/dev/null | tail -1 || true)
     [ -z "$b" ] || run mv "$b" "$t"
   done
+  if [ -L "$CSK" ] && [ "$(readlink "$CSK")" = "$A/skills" ]; then
+    run rm "$CSK"
+    b=""; for f in "$CSK".pre-forge-*; do if [ -e "$f" ] || [ -L "$f" ]; then b=$f; fi; done
+    [ -z "$b" ] || run mv "$b" "$CSK"
+  else echo "skip $CSK (not a forge link)"; fi
   if grep -qs "^$BEGIN" "$RC"; then
     run cp -a "$RC" "$RC.pre-forge-$(ts)"
     echo "+ remove forge block from $RC"
@@ -148,7 +175,7 @@ uninstall_all() {
   run rm -f "$A/VERSION"
   run rm -f "$A/moim.md"
   ! grep -qs "\"$A/skills\"" "$SKJSON" || run rm -f "$SKJSON"
-  echo "kept $A/skills and $A/tests (your data) and the goose tom setting"
+  echo "kept $A/skills (merged claude skills included) and $A/tests (your data) and the goose tom setting"
 }
 
 status_all() {
@@ -156,6 +183,7 @@ status_all() {
     t=${LINKS[$n]}; have "${NAMES[$n]}" || echo "absent  ${NAMES[$n]} (not installed)"
     if mine "$t"; then echo "linked  $t"; elif samecopy "$t"; then echo "copy    $t (identical but not a hard link: later edits will not reach it; re-run setup.sh)"; elif iscopy "$t" && [ -f "$t" ]; then echo "STALE   $t (differs from $HINTS; re-run setup.sh)"; elif [ -e "$t" ]; then echo "OTHER   $t (not a forge link)"; else echo "missing $t"; fi
   done
+  if [ -L "$CSK" ] && [ "$(readlink "$CSK")" = "$A/skills" ]; then echo "linked  $CSK"; elif [ -e "$CSK" ] || [ -L "$CSK" ]; then echo "OTHER   $CSK (not a forge link; re-run setup.sh to merge and link)"; else echo "missing $CSK"; fi
   [ -f "$HINTS" ] && echo "present $HINTS (forge hints $(cat "$A/VERSION" 2>/dev/null || echo '?'), source $(cat "$SRC/VERSION"))" || echo "missing $HINTS"
   diff -rq "$SRC/skills" "$A/skills" 2>/dev/null | grep -v __pycache__ | grep -v 'Only in .*: bp-' | head -10 || true
 }

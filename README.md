@@ -29,7 +29,7 @@ What it does, per agent found on `PATH`:
 
 | agent | hints | skills | extra |
 |---|---|---|---|
-| claude | link `~/.claude/CLAUDE.md` | read from `~/.agents/skills` (claude does not load them itself; the hints say so) | none |
+| claude | link `~/.claude/CLAUDE.md` | `~/.claude/skills` becomes a symlink to `~/.agents/skills` so claude lists the skills itself; skills already in `~/.claude/skills` are merged into `~/.agents/skills` first (an existing name there wins) and the old folder is saved as `skills.pre-forge-<timestamp>` | none |
 | goose | a **hard link** at `~/.config/goose/.goosehints` (goose ignores a symlink; a hard link is a regular file with the same inode, so edits in place reach it; an editor that replaces the file (`sed -i`, save-by-rename) or a different filesystem breaks it: setup falls back to a copy, `--status` reports `copy` or `STALE`, re-run setup to relink) | `load_skill` | `GOOSE_MOIM_MESSAGE_FILE` block in `~/.zshrc` (zsh) or `~/.bashrc`, Top Of Mind extension enabled |
 | agy | link `~/.gemini/GEMINI.md` | `~/.gemini/config/skills.json` with an absolute path (agy does not expand `~`) | none |
 
@@ -40,7 +40,7 @@ What it does, per agent found on `PATH`:
 - The desktop app starts a chat in the home folder unless a project folder is picked, so the hints send that plan to `~/.agents/plans/<date>-<topic>/PLAN.md` instead of `~/.agents/PLAN.md`.
 - With an ACP provider (`claude-acp`), goose forwards only the latest user message and `type: mcp` extensions: `.goosehints`, the Top Of Mind reminder and platform extensions (`load_skill`, developer, todo) never reach the agent. Claude still gets the hints through `~/.claude/CLAUDE.md`, because the adapter loads the user settings, and reads the skills from `~/.agents/skills` as the hints say.
 
-Existing files are saved as `<name>.pre-forge-<timestamp>` and restored by `--uninstall`. Skills and tests under `~/.agents` are kept on uninstall. `$HOME` is honoured, so a test run in a throwaway `HOME` touches nothing else.
+Existing files and folders are saved as `<name>.pre-forge-<timestamp>` and restored by `--uninstall` (which also removes the `~/.claude/skills` link). Skills and tests under `~/.agents` are kept on uninstall. `$HOME` is honoured, so a test run in a throwaway `HOME` touches nothing else.
 
 ## The hints in one paragraph
 
