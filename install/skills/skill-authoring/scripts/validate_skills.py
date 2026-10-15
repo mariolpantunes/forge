@@ -125,6 +125,10 @@ def check_skill(skill, ok_names):
             out = (r.stderr or "") + (r.stdout or "")
             if "Traceback" in out or "ModuleNotFoundError" in out or r.returncode in (126, 127):
                 err(f"scripts/{p.name} --help fails: {out.strip()[-200:]}")
+            elif r.returncode != 0:
+                err(f"scripts/{p.name} --help exits {r.returncode}: --help must print usage and exit 0")
+            elif not r.stdout.strip():
+                warn(f"scripts/{p.name} --help prints nothing on stdout: usage belongs on stdout")
     if list(skill.rglob("*.rs")) and not list(skill.rglob("Cargo.toml")):
         err("Rust sources without Cargo.toml (use cargo)")
     return errs, warns
