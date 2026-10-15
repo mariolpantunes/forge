@@ -10,6 +10,9 @@ Read when: creating or changing `.pre-commit-config.yaml`. Language-neutral rule
 - `files:` not `types:`, and include the governing config file (`pyproject.toml`, `Cargo.toml`).
 - Lint where the code lives. Check the layout, do not copy from another repo.
 - Comment each non-obvious choice with the failure it prevents.
+- A formatter is its own check-only hook (`--check`, `-d`, `fmt --check`), never one that rewrites files: a rewrite mid-commit leaves the staged and working trees different.
+- Adopting a formatter is one formatting-only commit; list it in `.git-blame-ignore-revs` and run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+- Pin the linter's rule set in the project config: a default set moves with each release and breaks the gate with no commit to blame.
 - Coverage is its own hook with `--fail-under=N`. The floor only ratchets up: never lower it to pass a commit.
 - Only add hooks for languages present in the repo.
 - System tool versions must match CI; pin them in CI.

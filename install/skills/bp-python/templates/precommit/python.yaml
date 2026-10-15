@@ -39,6 +39,15 @@ repos:
         files: '(\.py$|^pyproject\.toml$)'
         pass_filenames: false
 
+      # Check-only: a hook that rewrites files mid-commit leaves the staged and
+      # working trees different. Fix with `ruff format .` in a commit of its own.
+      - id: ruff-format
+        name: ruff format --check (src)
+        entry: ruff format --check src
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
+
       - id: basedpyright
         name: basedpyright
         # Reads the venv through [tool.basedpyright] venvPath/venv in pyproject.toml.

@@ -12,8 +12,11 @@ Install scope: packages go into the project venv or a script's PEP 723 block. Ne
 3. Sync: `venv/bin/pip install -q --upgrade . --group test` (pip >= 25.1; fallback `".[test]"`). The venv holds runtime dependencies plus coverage only.
 4. Tests and coverage run with `PYTHONPATH=src` (or the package dir), so the working tree is tested, not an installed copy.
 5. Scripts without a project: PEP 723 block and `uv run script.py`; declare every import (`scikit-learn` for `sklearn`, `pillow` for `PIL`).
-6. Lint and types: `ruff`, `basedpyright` (pointed at the venv with `[tool.basedpyright] venvPath` and `venv`), `vulture` run from the system install; their versions must match CI.
-7. CI pipeline: `.github/workflows/` runs, in this order, env sync, ruff, basedpyright, vulture, unittest, coverage (`--fail-under`); tool versions are pinned in CI and match the system install.
+6. Lint and types: `ruff check`, `basedpyright` (pointed at the venv with `[tool.basedpyright] venvPath` and `venv`), `vulture` run from the system install; their versions must match CI.
+   Pin the rule set with `[tool.ruff.lint] select`: ruff's default set changes between releases and turns the gate red with no commit to blame.
+   Format: `ruff format --check .` (check only; the hook never rewrites files).
+   Adopt it in one formatting-only commit (`ruff format .`, tests green) and list that commit in `.git-blame-ignore-revs`.
+7. CI pipeline: `.github/workflows/` runs, in this order, env sync, ruff check, ruff format --check, basedpyright, vulture, unittest, coverage (`--fail-under`); tool versions are pinned in CI and match the system install.
 8. Pre-commit hooks mirror that pipeline step for step; rules for the hook file are in `bp-git`. Templates: `~/.agents/skills/bp-python/templates/precommit/python.yaml`.
 9. If an editable install can mask a clean CI install, use `~/.agents/skills/bp-python/templates/precommit/python-venv-sync.yaml` (first hook makes `./venv` match a clean install).
 10. Throwaway scripts and scratch outputs go to the OS temp folder (`/tmp/<project>`), agent notes to `./.agents/` (gitignored), never into the project tree.

@@ -7,7 +7,9 @@ description: "Best practices for Rust work: cargo, lints in CI, install scope. U
 
 Install scope: build and run with `cargo` inside the project. Dependencies go in `Cargo.toml`. `cargo install` (a binary into `~/.cargo/bin`) and any system package need the user's approval: ask first.
 
-1. Format: `cargo fmt --check`.
+1. Format: `cargo fmt --check` (check only).
+   Adopt it in one formatting-only commit (`cargo fmt`, tests green) and list that commit in `.git-blame-ignore-revs`.
+   Settings go in `rustfmt.toml` at the crate root, never in the hook.
 2. Lint: `cargo clippy --release -- -D warnings`. Use release: debug and release enable different lints, and release matches CI.
 3. Test: `cargo test`; keep unit tests next to the code, integration tests in `tests/`.
 4. Pre-commit hook trigger: files `'(\.rs$|^Cargo\.toml$)'`, with `pass_filenames: false` because cargo always checks the whole crate. Template for a mixed Python and Rust repo: `~/.agents/skills/bp-rust/templates/precommit/python-rust.yaml`.

@@ -13,8 +13,9 @@ Install scope: use only commands that are already installed (`command -v tool`).
 4. Guard destructive commands: `rm -rf "${dir:?}/"`, absolute paths, no `cd` without `|| exit 1`.
 5. File lists: `find ... -print0 | xargs -0` or a `while IFS= read -r` loop; never parse `ls`.
 6. Check: `bash -n script.sh`, and `shellcheck script.sh` when it is installed.
-7. Arguments and help: a usage line in the header comment, `-h` prints it, unknown flags exit 2.
-8. Secrets come from environment variables or `.env`; never echo or log them.
+7. Format: `shfmt -d -i 2 -ci script.sh` when it is installed (`-d` only prints the diff; fix with `shfmt -w` in a commit of its own).
+8. Arguments and help: a usage line in the header comment, `-h` prints it, unknown flags exit 2.
+9. Secrets come from environment variables or `.env`; never echo or log them.
 
 Notes:
 - More than about 50 lines of logic, or JSON and dates: write it in Python (`uv run`) instead.
