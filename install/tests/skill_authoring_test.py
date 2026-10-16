@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1] / "skills/skill-authoring/scripts/skill.py"
+NEW = SCRIPT.with_name("new_skill.py")
+DESC = "Convert audio files. Use when audio must be converted."
 MD = '---\nname: {n}\ndescription: "{d}"\n---\n\n# {n}\n\n1. Run `uv run ~/.agents/skills/{n}/scripts/x.py`.\n'
 
 
@@ -70,6 +72,50 @@ class SkillPy(unittest.TestCase):
             p.communicate(f"content {i}\n")
         for i in range(6):
             self.assertEqual((self.root / f"pdf-notes/references/r{i}.md").read_text(), f"content {i}\n")
+
+    def test_parallel_new_skill_same_name_has_one_winner(self):
+        cmd = [str(NEW), "audio-tools", DESC, "--script", "a.py", "--root", str(self.root)]
+        procs = [subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) for _ in range(8)]
+        codes = [p.wait() for p in procs]
+        self.assertEqual(codes.count(0), 1, codes)
+        self.assertTrue((self.root / "audio-tools/SKILL.md").exists())
+        self.assertTrue((self.root / "audio-tools/scripts/a.py").exists())
+        self.assertEqual(list(self.root.glob(".new-*")), [])
+
+    def test_parallel_new_skill_different_names_all_created(self):
+        procs = [subprocess.Popen([str(NEW), f"tool-{n}", DESC, "--root", str(self.root)],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) for n in "abcdef"]
+        self.assertEqual([p.wait() for p in procs], [0] * 6)
+        for n in "abcdef":
+            self.assertTrue((self.root / f"tool-{n}/SKILL.md").exists())
+
+    def test_parallel_puts_same_base_only_one_wins(self):
+        _, out = self.sp("show", "pdf-notes")
+        sha = out.split("tree-sha: ")[1].split()[0]
+        procs = [subprocess.Popen([str(SCRIPT), "--root", str(self.root), "put", "pdf-notes", "references/same.md", "--base", sha],
+                                  stdin=subprocess.PIPE, text=True, stdout=subprocess.DEVNULL) for _ in range(6)]
+        codes = []
+        for i, p in enumerate(procs):
+            p.communicate(f"writer {i}\n")
+            codes.append(p.returncode)
+        self.assertEqual(sorted(codes), [0, 3, 3, 3, 3, 3])
+        self.assertRegex((self.root / "pdf-notes/references/same.md").read_text(), r"^writer \d\n$")
+
+    def test_put_during_merge_keeps_a_valid_skill(self):
+        sk(self.root, "pdf-summary", "Summarise PDF files. Use when a PDF needs a summary.", {"scripts/y.py": "print(2)\n"})
+        m = subprocess.Popen([str(SCRIPT), "--root", str(self.root), "merge", "pdf-notes", "pdf-summary", "--apply"],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        ps = [subprocess.Popen([str(SCRIPT), "--root", str(self.root), "put", "pdf-notes", f"references/p{i}.md"],
+                               stdin=subprocess.PIPE, text=True, stdout=subprocess.DEVNULL) for i in range(4)]
+        for i, p in enumerate(ps):
+            p.communicate(f"p{i}\n")
+        m.wait()
+        keep = self.root / "pdf-notes"
+        self.assertFalse((self.root / "pdf-summary").exists())
+        self.assertTrue((keep / "SKILL.md").exists() and (keep / "scripts/y.py").exists())
+        for i in range(4):
+            self.assertEqual((keep / f"references/p{i}.md").read_text(), f"p{i}\n")
+        self.assertEqual(list(keep.rglob(".*.tmp")), [])
 
     def test_merge_dry_run_then_apply(self):
         sk(self.root, "pdf-summary", "Summarise PDF files. Use when a PDF needs a summary.",

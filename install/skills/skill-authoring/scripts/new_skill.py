@@ -9,13 +9,18 @@ Usage: new_skill.py NAME "DESCRIPTION" [--script NAME.py] [--ref NAME.md] [--roo
 
 NAME: lowercase words joined by hyphens. DESCRIPTION: what it does, then "Use when ..."
 (under 300 chars). --root defaults to ~/.agents/skills. Never overwrites an existing skill.
+Takes the same per-skill lock as skill.py and appears atomically (built aside, then renamed),
+so parallel agents never see a half-built skill and only one creator of a name wins.
 """
 import argparse
+import os
 import re
+import shutil
 import stat
 from pathlib import Path
 
 from lib.common import run
+from skill import locked
 
 SKILL = """---
 name: {name}
@@ -50,21 +55,7 @@ if __name__ == "__main__":
 '''
 
 
-def main(log):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("name")
-    ap.add_argument("description")
-    ap.add_argument("--script", action="append", default=[])
-    ap.add_argument("--ref", action="append", default=[])
-    ap.add_argument("--root", default="~/.agents/skills")
-    a = ap.parse_args()
-    if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", a.name):
-        raise SystemExit("name must be lowercase words joined by hyphens")
-    if len(a.description) > 300 or not re.search(r"\bUse\b", a.description):
-        raise SystemExit('description: under 300 chars and must contain "Use when ..."')
-    d = Path(a.root).expanduser() / a.name
-    if d.exists():
-        raise SystemExit(f"{d} exists: improve it instead of creating a new skill")
+def build(d, a):
     d.mkdir(parents=True)
     (d / "SKILL.md").write_text(SKILL.format(name=a.name, desc=a.description))
     for s in a.script:
@@ -82,6 +73,33 @@ def main(log):
     for r in a.ref:
         (d / "references").mkdir(exist_ok=True)
         (d / "references" / r).write_text("Read when: TODO\n\n")
+
+
+def main(log):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("name")
+    ap.add_argument("description")
+    ap.add_argument("--script", action="append", default=[])
+    ap.add_argument("--ref", action="append", default=[])
+    ap.add_argument("--root", default="~/.agents/skills")
+    a = ap.parse_args()
+    if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", a.name):
+        raise SystemExit("name must be lowercase words joined by hyphens")
+    if len(a.description) > 300 or not re.search(r"\bUse\b", a.description):
+        raise SystemExit('description: under 300 chars and must contain "Use when ..."')
+    root = Path(a.root).expanduser()
+    root.mkdir(parents=True, exist_ok=True)
+    d = root / a.name
+    with locked(root, a.name):
+        if d.exists():
+            raise SystemExit(f"{d} exists: improve it instead of creating a new skill")
+        tmp = root / f".new-{a.name}-{os.getpid()}"
+        shutil.rmtree(tmp, ignore_errors=True)
+        try:
+            build(tmp, a)
+            os.rename(tmp, d)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
     log.info("created %s; fill the TODOs, then run validate_skills.py", d)
     print(d)
 
