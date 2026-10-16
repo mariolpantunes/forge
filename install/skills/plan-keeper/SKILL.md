@@ -1,6 +1,6 @@
 ---
 name: plan-keeper
-description: "Write, route and compact PLAN.md files: pick the plan of a task (home folder concept router), add entries, keep a plan under 8k tokens, prune old home plans. Use at the start of every task, whenever a plan is written, and when a plan is over 8k tokens."
+description: "Create, update, route and compact PLAN.md files: pick or continue a project or home plan, add entries, keep a plan under 8k tokens, prune old home plans. Use at the start of every task and whenever reading, updating or compacting any PLAN.md."
 ---
 
 # plan-keeper
@@ -9,24 +9,25 @@ Command: `uv run ~/.agents/skills/plan-keeper/scripts/plan.py` (below: `plan.py`
 
 ## Pick the plan
 
-1. In a project folder the plan is `./.agents/PLAN.md`.
+1. In a project folder the plan is `./.agents/PLAN.md`: run `plan.py check` first, and if it reports `verdict compact` or `OVER CAP`, compact it (below) before adding new work.
 2. In the home folder run `plan.py prune`, then `plan.py find "<task in a few English words>"`.
 3. `verdict: continue`: use the printed plan.
-4. `verdict: new`: run `plan.py init --desc "<one line: what the work is, with its key nouns>"` and use the printed plan path.
+4. `verdict: new`: run `plan.py init --desc "<one line: what the work is, with its key nouns>"` and use the printed plan path (`init` and `add` update `~/.agents/plans/PLAN.md` automatically; do not edit the router by hand).
 5. A chat that writes no files needs no plan.
-6. A task that changes files in another project folder: write its entry to `<folder>/.agents/PLAN.md` (`--plan <folder>`).
+6. A task that changes files in another project folder: write its entry to `<folder>/.agents/PLAN.md` with `plan.py add --plan <folder> ...` (also links `<folder>` in the home router).
+7. Once the plan exists, record the skills you loaded: `plan.py add [--plan P] Key "Skills loaded: <names>"`.
 
 ## Write
 
-1. Add an entry: `plan.py add [--plan P] <Done|Current|Next|Aborted|Key> "<text>"`.
-   A plan written by hand uses the same five headings (`## Done` ... `## Key knowledge`).
+1. Add an entry with `plan.py add [--plan P] <Done|Current|Next|Aborted|Key> "<text>"`.
+   The five required headings are `## Done`, `## Current`, `## Next`, `## Aborted`, `## Key knowledge`.
 2. The home router holds one line per concept; `find` matches the task against that line, so reword it when the work shifts (`add --desc "<new line>"`).
 3. One entry: what was done, output paths, the rerun command, the decision, the next step.
 4. Text over 3 lines goes to `notes/` by itself; the entry keeps a link.
 5. A subagent never runs `add`; the parent records its result.
 6. Before retrying an approach, grep the plan and `.agents/notes/` (`notes/tried.md` too) for it.
 7. At the end of the task run `plan.py check [--plan P]`.
-8. If any output says OVER CAP, compact (below) before continuing.
+8. If any output says `OVER CAP` or `verdict compact`, compact (below) before continuing.
 
 ## Compact (plan over 8k tokens)
 

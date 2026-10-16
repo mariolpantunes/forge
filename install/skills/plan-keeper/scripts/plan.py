@@ -239,6 +239,7 @@ def upsert_row(plan: Path, desc: str | None) -> None:
             rows.append({"desc": clean_desc(desc or fallback), "path": path, "tail": f"touched: {today}",
                          "section": "Current", "touched": today})
         write_rows(router, rows)
+    print(f"router: {short(router)}")
 
 
 def words(s: str) -> list[str]:
@@ -259,8 +260,13 @@ def row_words(r: dict) -> set[str]:
 
 
 # ---- plan resolution -------------------------------------------------------------------------
+def is_home_or_support(p: Path) -> bool:
+    r = p.resolve()
+    return r == home_dir() or (r.is_relative_to(home_dir() / ".agents") and not r.is_relative_to(plans_dir()))
+
+
 def at_home() -> bool:
-    return Path.cwd().resolve() == home_dir()
+    return is_home_or_support(Path.cwd())
 
 
 def resolve_plan(arg: str | None) -> Path:
@@ -268,7 +274,10 @@ def resolve_plan(arg: str | None) -> Path:
         p = expand(arg)
         if p.is_dir() or p.suffix != ".md":  # a folder, existing or not
             p = p / "PLAN.md" if p.resolve().is_relative_to(plans_dir()) else p / ".agents" / "PLAN.md"
-        return p.resolve()
+        res = p.resolve()
+        if res == (home_dir() / ".agents" / "PLAN.md").resolve():
+            sys.exit("error: never write ~/.agents/PLAN.md; use ~/.agents/plans/PLAN.md via `plan.py find` or `init`")
+        return res
     if at_home():
         sys.exit("error: in the home folder pass --plan (run `plan.py find \"<task>\"` first)")
     return (Path.cwd() / ".agents" / "PLAN.md").resolve()
@@ -328,7 +337,7 @@ def cmd_add(a) -> int:
         print(n)
     with locked(plan):
         atomic_write(plan, insert_entry(plan.read_text(), section, make_entry(text, plan)))
-    if inside or at_home():
+    if inside or at_home() or a.plan or a.desc or (plans_dir() / "PLAN.md").exists():
         upsert_row(plan, a.desc)
     print(f"added to {short(plan)} [{section}]")
     print(report_size(plan))
@@ -350,7 +359,7 @@ def cmd_init(a) -> int:
     warn_english(a.desc or "", "write the description in English")
     for n in ensure_plan(plan, a.desc) or [f"exists {short(plan)}"]:
         print(n)
-    if plan.resolve().is_relative_to(plans_dir()) or at_home():
+    if plan.resolve().is_relative_to(plans_dir()) or at_home() or a.plan or a.desc or (plans_dir() / "PLAN.md").exists():
         upsert_row(plan, a.desc)
     print(f"plan: {short(plan)}")
     return 0
@@ -468,8 +477,8 @@ def cmd_replace(a) -> int:
                   "Run `archive` again, merge the new entries into your compact version, then replace.")
             return 3
         atomic_write(plan, new if new.endswith("\n") else new + "\n")
-    if plan.resolve().is_relative_to(plans_dir()) or at_home():
-        upsert_row(plan, None, None)
+    if plan.resolve().is_relative_to(plans_dir()) or at_home() or a.plan or (plans_dir() / "PLAN.md").exists():
+        upsert_row(plan, None)
     print(f"replaced {short(plan)}")
     print(report_size(plan))
     return 0
@@ -480,7 +489,7 @@ def cmd_find(a) -> int:
     task = " ".join(a.task)
     warn_english(task, "translate the task to English words before find")
     cwd = Path(a.cwd).resolve() if a.cwd else Path.cwd().resolve()
-    if cwd != home_dir():
+    if not is_home_or_support(cwd):
         p = cwd / ".agents" / "PLAN.md"
         print(f"verdict: continue\nplan: {short(p)}\nexists: {'yes' if p.exists() else 'no'}")
         return 0

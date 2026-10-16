@@ -237,5 +237,34 @@ class Prune(Base):
         self.assertIn("nothing to prune", self.run_plan("prune"))
 
 
+class SupportFolderRules(Base):
+    def test_agents_plan_file_is_refused(self):
+        out = self.run_plan("add", "--plan", str(self.home / ".agents" / "PLAN.md"), "Done", "x", code=1)
+        self.assertIn("never write ~/.agents/PLAN.md", out)
+
+    def test_support_folder_counts_as_home(self):
+        (self.home / ".agents").mkdir(exist_ok=True)
+        out = self.run_plan("find", "tune", "the", "hints", cwd=self.home / ".agents")
+        self.assertIn("verdict: new", out)
+
+    def test_add_prints_router_and_replace_updates_it(self):
+        plan = self.new_concept("tune the forge hints file")
+        out = self.run_plan("add", "--plan", plan, "Done", "second step")
+        self.assertIn("router:", out)
+        out = self.run_plan("archive", "--plan", plan)
+        digest = [ln.split()[-1] for ln in out.splitlines() if "hash" in ln or "sha" in ln][-1]
+        new = self.home / "compact.md"
+        new.write_text(Path(plan.replace("~", str(self.home), 1)).read_text())
+        out = self.run_plan("replace", "--plan", plan, "--new", str(new), "--expect", digest)
+        self.assertIn("replaced", out)
+        self.assertIn("tune the forge hints file", (self.plans / "PLAN.md").read_text())
+
+    def test_project_init_with_plan_links_router_only_when_asked(self):
+        proj = self.home / "git" / "demo2"
+        (proj / ".git").mkdir(parents=True)
+        self.run_plan("init", "--plan", str(proj), "--desc", "second demo project")
+        self.assertIn("second demo project", (self.plans / "PLAN.md").read_text())
+
+
 if __name__ == "__main__":
     unittest.main()
