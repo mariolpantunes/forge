@@ -13,6 +13,7 @@ declare a PEP 723 block and import nothing from outside the skill, Rust skills h
 a Cargo.toml, bash scripts use strict mode, no secrets, no stale ~/.agent paths.
 Exit 1 if any error. Warnings do not change the exit code.
 """
+import getpass
 import re
 import subprocess
 import sys
@@ -62,6 +63,31 @@ def check_python(f, skill, err, warn):
             err(f"{f.name}: imports PIL but 'pillow' is not declared")
     if re.search(r"sys\.path\.insert\(.*\.\.", src) or re.search(r"\.agents/skills/(?!%s)" % skill.name, src):
         err(f"{f.name}: reaches outside its skill folder")
+
+
+GENERIC_RES = [
+    (re.compile(r"/home/[A-Za-z_][\w-]*/|/Users/\w+/|[A-Z]:\\Users\\"), "personal absolute path (use ~ or a relative path)"),
+    (re.compile(r"\b[\w.+-]+@(?!example\.)[\w-]+\.[a-z]{2,}\b"), "email address"),
+    (re.compile(r"\b(?:10\.\d+|172\.(?:1[6-9]|2\d|3[01])|192\.168)\.\d+\.\d+\b"), "private IP address"),
+    (re.compile(r"\b[\w-]+\.(?:local|lan|internal)\b"), "internal host name"),
+]
+
+
+def generic_findings(skill):
+    """Findings that make a skill personal instead of generic and reusable (paths, hosts, mail, user name)."""
+    found = []
+    user = re.compile(rf"\b{re.escape(getpass.getuser())}\b") if len(getpass.getuser()) > 3 else None
+    for f in sorted(skill.rglob("*")):
+        if not f.is_file() or "__pycache__" in f.parts or f.name == "validate_skills.py":
+            continue
+        if f.suffix not in {".py", ".sh", ".md", ".yaml", ".yml", ".toml", ".rs", ".json", ".txt", ".tex"} and f.name != "SKILL.md":
+            continue
+        rel = f.relative_to(skill)
+        for n, line in enumerate(f.read_text(errors="ignore").splitlines(), 1):
+            for rx, what in GENERIC_RES + ([(user, "the login name of the author")] if user else []):
+                if rx.search(line):
+                    found.append(f"{rel}:{n}: {what}")
+    return found
 
 
 def check_skill(skill, ok_names):
@@ -129,6 +155,8 @@ def check_skill(skill, ok_names):
                 err(f"scripts/{p.name} --help exits {r.returncode}: --help must print usage and exit 0")
             elif not r.stdout.strip():
                 warn(f"scripts/{p.name} --help prints nothing on stdout: usage belongs on stdout")
+    for g in generic_findings(skill)[:5]:
+        warn(f"not generic: {g}")
     if list(skill.rglob("*.rs")) and not list(skill.rglob("Cargo.toml")):
         err("Rust sources without Cargo.toml (use cargo)")
     return errs, warns
