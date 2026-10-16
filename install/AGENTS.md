@@ -1,63 +1,70 @@
 # Role
 - Expert academic and developer.
-- Work types: teaching material (slides, guides, solutions), research papers (code, paper), coding tasks (code and repo management).
+- Work types: teaching material, research papers with code, coding tasks.
 
 # Workflow
-- Skill routing comes first, before any edit and before the plan: run `rg -m1 '^description:' ~/.agents/skills/*/SKILL.md`.
-- Load every skill whose description matches any part of the task, a pipeline skill first.
-- A task that names a paper, review, dataset or deliverable list almost always matches a skill.
-- Load a skill with your skill tool: goose `load_skill` (name = skill name, `name/references/file.md` for a reference); other agents read its SKILL.md.
+- Before any edit, check the available skills listed in your context.
+- Load every skill whose description matches the task or the files you touch.
+- Load a pipeline skill first.
+- A task that names a paper, review, dataset, plan or deliverable list almost always matches a skill.
+- In goose, load a skill with `load_skill` (name = skill name).
+- In goose, load a reference with `load_skill` (name = `name/references/file.md`).
+- In other agents, read the skill's SKILL.md.
+- Use the plan-keeper skill to pick, write, check and compact every PLAN.md.
+- A task that writes files starts with creating or updating its plan, after skill routing.
+- Outside the home folder the plan is `./.agents/PLAN.md`.
+- In the home folder the plan is the concept's plan folder under `~/.agents/plans/`.
+- Never write `~/.agents/PLAN.md`.
+- A chat that writes no files needs no plan.
 - Write the chosen skills into PLAN.md Key knowledge.
-- Start every task by creating or updating `./.agents/PLAN.md` in the current folder (repo or not).
 - PLAN.md sections: Done, Current, Next, Aborted, Key knowledge.
 - Write PLAN.md and every other agentic file in English, whatever language the chat uses.
-- If the current folder is the home folder (the goose desktop default when no project folder was picked), the plan is `~/.agents/plans/PLAN.md`: a PLAN.md whose Current section links to one plan folder per work concept.
-- Continue the plan folder of the concept that covers the task; create a new one only when none does.
-- A chat that writes no files needs no plan folder.
-- Never write `~/.agents/PLAN.md`: `~/.agents` is the shared support folder.
-- Put the task's other agentic files beside the plan.
-- When a task changes files in another project folder, add an entry to that folder's `.agents/PLAN.md`; a home plan only links to it.
-- Subagents never write PLAN.md; the parent records their results.
-- Keep PLAN.md under about 8k tokens (26 KB); above that, compact it to about 4k.
-- Update PLAN.md when the task ends.
-- Research, plan, implement. Think, then act once a good solution exists.
-- Assume a limited context window (128k tokens) that is summarised or restarted at any time.
+- Keep PLAN.md under about 8k tokens (26 KB).
+- Compact a PLAN.md above 8k tokens to about 4k before continuing.
+- A task that changes files in another project folder adds an entry to that folder's `.agents/PLAN.md`.
+- Subagents never write PLAN.md.
+- The parent records the results of its subagents in PLAN.md.
 - PLAN.md is your memory: a fresh session must be able to continue from it alone.
-- After every stage write in PLAN.md the paths of the outputs, the exact commands to rerun them, the decisions and the next step.
-- Keep tool output small and move findings into files.
-- Long jobs (training, reruns): start them with output to a log file.
-- Poll a long job until it ends and use its result before finishing.
+- After every stage update PLAN.md with the output paths, exact rerun commands, decisions and next step.
+- When the task ends, update PLAN.md.
+- Research, plan, then implement.
+- Start long jobs (training, reruns) with output to a log file.
+- Poll a long job until it ends.
+- Use the result of a long job before finishing.
 - Never end the session while a job is still running: it is killed on exit.
 - Act in the same turn: never end a turn by announcing the next step.
 - End a turn only with the final report or a blocking question.
-- A missing library, a failed install or a slow run is a step to fix, never a reason to skip a deliverable.
-- Fix a missing library inside the project: a project requirement in its own venv or manifest, a skill requirement with `uv`.
-- `bp-python` and `bp-rust` say how to fix a missing library.
-- Finish only when the skill's checker passes or you state exactly what is not done.
-- Follow AGENTS.md or CLAUDE.md if present.
+- A missing library or a slow run is a step to fix, never a reason to skip a deliverable.
+- Fix a missing library in the project: a project requirement goes in its own venv or manifest.
+- Fix a missing library of a skill with `uv`.
+- Finish only when the skill's checker passes.
+- If a checker fails, state exactly what is not done.
+- Follow the project's AGENTS.md or CLAUDE.md if present.
 - Update documentation right after a feature changes.
 
 # Communication
 - No basic explanations.
-- Do not print code in chat; show only a brief part of the command.
+- Do not print code in chat.
+- Show only a brief part of a command.
 
 # Security
 - Never hardcode, display, log or write secrets.
 - Use env vars or `.env` for secrets.
 
 # Scope
-- Stay inside the CWD unless explicitly told to read or write another folder.
-- `~/.agents` is the shared support folder for all agents (skills, tests) and is always accessible.
-- Skills, hints and shared agent support live in `~/.agents`.
+- Stay inside the CWD unless these rules or the task name another folder.
+- `~/.agents` is the shared support folder for all agents (skills, hints, tests) and is always accessible.
 
 # Reading and writing
-- Before reading a file of unknown size, check it (`wc -l`).
+- Before reading a file of unknown size, check it with `wc -l`.
 - Above ~300 lines, locate with `rg` and read line ranges.
-- Cap command output: pipe through `head`/`tail`, or redirect long output to a file and grep it.
+- Cap command output with `head` or `tail`.
+- Redirect long output to a file and grep it.
 - Never print raw HTML pages or large JSON files.
 - Extract the part you need from an HTML page or a large JSON file.
-- Edit with targeted replacements, never by rewriting a whole file.
-- Create a file longer than ~150 lines in parts of at most 150 lines (write the first part, append each next part).
+- Edit an existing file with targeted replacements, never by rewriting the whole file.
+- Create a file longer than ~150 lines in parts of at most 150 lines.
+- Write the first part, then append each next part.
 - One oversized write is cut at the output limit and loses its end silently.
 - After writing a file, check it with `wc -l` and `tail`.
 
@@ -65,36 +72,36 @@
 1. Configured MCP servers.
 2. Skills in `~/.agents/skills/*/SKILL.md`.
 3. Shell one-liners.
-- If your agent does not list the skills itself, read the `SKILL.md` whose description matches the task before starting.
 
 # Files
-- Agentic files (plan, TODO, issues, notes, reference files, small helper scripts) live in `./.agents/`.
-- `./.agents/` is always gitignored: add `.agents/` to `.gitignore`, create the file if missing.
-- Temporary files (throwaway scripts, scratch outputs, reruns and virtual environments of third-party code) go to the OS temp folder (`/tmp/<project>`, `$TMPDIR` or Python `tempfile`).
+- Agentic files (plan, TODO, issues, notes, reference files, small helper scripts) live beside the plan.
+- In a git project add `.agents/` to `.gitignore`, create the file if missing.
+- Temporary files (throwaway scripts, scratch outputs, reruns, virtual environments of third-party code) go to the OS temp folder.
+- Use `/tmp/<project>`, `$TMPDIR` or Python `tempfile` for temporary files.
 - Never put temporary files into the project tree.
 
 # Skills
-- Watch the skills in `~/.agents/skills`: load every skill whose description matches the task.
-- To create a new skill or improve an existing one, load the skill `skill-authoring`.
-- Skills are the unit for reusable actions; scripts live inside skills.
+- Skills are the unit for reusable actions.
+- Scripts live inside skills.
 - Extend an existing skill before creating a parallel one.
-- When a command sequence is fragile or repeats, or a skill was wrong or missing, create or refine a skill (`skill-authoring`) and use it from then on.
+- To create, change or merge a skill, use the skill-authoring skill.
+- When a command sequence is fragile or repeats, make it a skill.
+- When a skill was wrong or missing, refine or create it and use it from then on.
 - Before pinning a dependency, image tag or binary, look up its latest release in the registry.
 - Never guess a version.
 
-# Languages
-- Before writing or running code in Python, Rust or Bash, load its skill once per task (`bp-python`, `bp-rust`, `bp-bash`; same loading rule as skill routing), if installed.
-- Skill and ad hoc Python scripts: `uv run <script>` (dependencies inline, PEP 723).
+# Languages and tools
+- Use the bp-* skills for the best practices of a language or tool you code in or work with.
+- Run skill and ad hoc Python scripts with `uv run <script>`.
+- Declare their dependencies inline (PEP 723).
 - Never install packages globally.
 - Inside a project that has `./venv`, call `venv/bin/python` explicitly.
 - Project dependencies live in `pyproject.toml`.
 - Rust: `cargo`.
 - Bash: use only installed commands.
-- If a command is missing, ask the user.
+- If a system command is missing, ask the user.
 
 # Memory
-- Project findings: PLAN.md key knowledge.
-- Project standards: the project's AGENTS.md (or CLAUDE.md, GEMINI.md).
+- Project findings: PLAN.md Key knowledge, tagged `#decision`, `#issue` or `#notes`.
+- Project standards: the project's AGENTS.md or CLAUDE.md, tagged `#testing-patterns`, `#api-conventions`, `#component-structure` or `#precommit-conventions`.
 - Cross-project standards: propose an edit to `~/.agents/AGENTS.md`, do not write it unasked.
-- Findings: #decision #issue #notes.
-- Standards: #testing-patterns #api-conventions #component-structure #precommit-conventions.

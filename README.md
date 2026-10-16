@@ -2,7 +2,7 @@
 
 Foundations for Open Research Guidance and Expansion: one hints file and a small set of skills that make claude, goose and agy follow the same working rules.
 
-Current hints version: **h16** (`install/VERSION`).
+Current hints version: **h19** (`install/VERSION`).
 
 ## What is in the repo
 
@@ -11,7 +11,7 @@ Current hints version: **h16** (`install/VERSION`).
 | `install/AGENTS.md` | the hints file (role, workflow, scope, reading and writing, languages, memory); the single source for all three agents |
 | `install/moim.md` | the per-turn reminder for goose (plan file, `load_skill`, act in the same turn, write long files in parts) |
 | `install/skills/` | 8 skills: `bp-git`, `bp-latex`, `bp-research`, `skill-authoring`, `plan-keeper` (always installed) and `bp-python`, `bp-rust`, `bp-bash` (optional, see `--langs`) |
-| `install/tests/` | headless smoke tests for the hints and skills |
+| `install/tests/` | headless smoke tests, unit tests (plan-keeper, skill-authoring) and the hints rules gate |
 | `setup.sh` | installs `install/` into `~/.agents` and wires the agents that are on `PATH` |
 
 ## Install

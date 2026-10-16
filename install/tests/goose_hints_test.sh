@@ -28,6 +28,8 @@ for f in "$SK"/*/scripts/*.py; do
 done
 uvr "$SK/skill-authoring/scripts/validate_skills.py" >/dev/null && ok "skills validate" || bad "validate_skills.py reports errors"
 python3 "$(dirname "$0")/plan_keeper_test.py" >/dev/null 2>&1 && ok "plan-keeper unit tests" || bad "plan_keeper_test.py fails"
+python3 "$(dirname "$0")/skill_authoring_test.py" >/dev/null 2>&1 && ok "skill-authoring unit tests" || bad "skill_authoring_test.py fails"
+python3 "$(dirname "$0")/hints_rules_test.py" >/dev/null 2>&1 && ok "hints rules (singular bullets, core skills only)" || bad "hints_rules_test.py fails"
 # every skill the hints or the reminder name must be installed (issue #3: moim.md once named a skill that is not shipped)
 missing=""
 for n in $(grep -ohE 'load_skill [a-z][a-z0-9-]+|\bbp-[a-z]+\b' ~/.agents/AGENTS.md ~/.agents/moim.md 2>/dev/null | sed 's/^load_skill //' | grep -vxE 'tool|for' | sort -u); do
